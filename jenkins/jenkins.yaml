@@ -1,0 +1,48 @@
+jenkins:
+  systemMessage: "Jenkins configured via JCasC - managed by Git"
+  numExecutors: 0
+  mode: EXCLUSIVE
+  
+  securityRealm:
+    local:
+      allowsSignup: false
+      users:
+        - id: "${JENKINS_ADMIN_USER:-admin}"
+          password: "${JENKINS_ADMIN_PASSWORD:-admin}"
+
+  authorizationStrategy:
+    loggedInUsersCanDoAnything:
+      allowAnonymousRead: false
+
+  clouds:
+    - ecs:
+        name: "ecs-cloud"
+        cluster: "${ECS_AGENT_CLUSTER}"
+        regionName: "${AWS_DEFAULT_REGION:-us-east-1}"
+        jenkinsUrl: "${JENKINS_URL}"
+        tunnel: "${JNLP_TUNNEL}"
+        numExecutors: 1
+        slaveTimeoutInSeconds: 300
+        templates:
+          - templateName: "ecs-agent"
+            label: "ecs"
+            image: "${AGENT_IMAGE:-jenkins/inbound-agent:latest-jdk21}"
+            launchType: "FARGATE"
+            operatingSystemFamily: "LINUX"
+            cpuArchitecture: "X86_64"
+            networkMode: "awsvpc"
+            remoteFSRoot: "/home/jenkins/agent"
+            platformVersion: "LATEST"
+            memoryReservation: 2048
+            cpu: 1024
+            subnets: "${SUBNETS}"
+            securityGroups: "${AGENT_SECURITY_GROUP}"
+            assignPublicIp: true
+            executionRole: "${EXECUTION_ROLE_ARN}"
+            taskrole: "${AGENT_TASK_ROLE_ARN}"
+
+  slaveAgentPort: 50000
+
+unclassified:
+  location:
+    url: "${JENKINS_URL}"
